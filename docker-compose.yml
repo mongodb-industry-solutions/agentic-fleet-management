@@ -1,0 +1,30 @@
+services:
+  fleet-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    image: agentic-fleet-management-backend:latest
+    env_file:
+      - backend/.env
+    volumes:
+      # Bedrock uses the AWS profile on the host.
+      - ~/.aws:/root/.aws:ro
+    ports:
+      - "8000:8000"
+    restart: always
+    container_name: fleet-backend
+
+  fleet-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    image: agentic-fleet-management-frontend:latest
+    environment:
+      # Server-side rewrite target, since the two containers are separate hosts.
+      - BACKEND_URL=http://fleet-backend:8000
+    ports:
+      - "3000:8080"
+    depends_on:
+      - fleet-backend
+    restart: always
+    container_name: fleet-frontend

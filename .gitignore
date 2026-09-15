@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.uv/
+*.egg-info/
+
+# Node
+node_modules/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+*.log
+
+# Generated sample data and customer extracts. Never commit fleet data.
+backend/data/
+profiles/*/data/
+
+# Local tooling
+shot.mjs
+diag.mjs
+chk.mjs
+probe*.mjs
+.DS_Store
+
+# Local agent tool permissions, specific to one machine
+.claude/

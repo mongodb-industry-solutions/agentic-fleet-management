@@ -1,0 +1,89 @@
+{
+ "name": "Leafy Mobility operating territory",
+ "type": "Feature",
+ "properties": {
+  "note": "One envelope per region, drawn generously outward from the depots. A position outside these is flagged for review rather than rejected.",
+  "regions": [
+   "BR",
+   "NA",
+   "EU"
+  ]
+ },
+ "geometry": {
+  "type": "MultiPolygon",
+  "coordinates": [
+   [
+    [
+     [
+      -57.1711,
+      -35.9939
+     ],
+     [
+      -32.3225,
+      -35.9939
+     ],
+     [
+      -32.3225,
+      -6.9086
+     ],
+     [
+      -57.1711,
+      -6.9086
+     ],
+     [
+      -57.1711,
+      -35.9939
+     ]
+    ]
+   ],
+   [
+    [
+     [
+      -124.4085,
+      22.4312
+     ],
+     [
+      -73.6248,
+      22.4312
+     ],
+     [
+      -73.6248,
+      49.6777
+     ],
+     [
+      -124.4085,
+      49.6777
+     ],
+     [
+      -124.4085,
+      22.4312
+     ]
+    ]
+   ],
+   [
+    [
+     [
+      -15.1342,
+      32.7742
+     ],
+     [
+      17.786099999999998,
+      32.7742
+     ],
+     [
+      17.786099999999998,
+      58.3105
+     ],
+     [
+      -15.1342,
+      58.3105
+     ],
+     [
+      -15.1342,
+      32.7742
+     ]
+    ]
+   ]
+  ]
+ }
+}

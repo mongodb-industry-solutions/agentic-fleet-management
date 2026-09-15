@@ -1,0 +1,14 @@
+{
+    "INDUSTRY": "Automotive / Mobility",
+    "DEMO_NAME": "Agentic Fleet Management",
+    "VSS_VERSION": "6.1.0",
+    "EMBEDDINGS_PROVIDER": "voyageai",
+    "EMBEDDINGS_MODEL_NAME": "Voyage Multimodal 3",
+    "EMBEDDINGS_MODEL_ID": "voyage-multimodal-3",
+    "RERANK_MODEL_ID": "rerank-2.5",
+    "CHATCOMPLETIONS_PROVIDER": "bedrock",
+    "CHATCOMPLETIONS_MODEL_NAME": "Anthropic Claude (within AWS Bedrock)",
+    "CHATCOMPLETIONS_MODEL_ID": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "FANOUT_MODEL_ID": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "_NOTE": "Embeddings and reranking run on Voyage AI directly. Reasoning runs on Claude via AWS Bedrock using the AWS_REGION and AWS_PROFILE in .env. For deployed environments use inference profile ARNs rather than direct model IDs."
+}

@@ -1,0 +1,63 @@
+# OEM connected-car feed.
+#
+# The manufacturer reads values off the vehicle bus and delivers them through an
+# API. Same cars as the tracker feed, different everything else: identified by
+# VIN rather than registration, reporting every two minutes rather than every
+# minute, arriving a minute or more late, and using its own units.
+#
+# Naming the VSS path is still the whole integration. The target unit comes from
+# the specification, so a fuel level expressed as a fraction and one expressed as
+# a percentage both land on the same signal without anyone writing a conversion.
+
+source:
+  name: oem_connected
+  sourceType: OEM_CONNECTED
+  description: Manufacturer connected-car platform, read from the vehicle bus
+
+identity:
+  column: vin
+  kind: vin
+
+timestamp:
+  column: event_time_utc
+
+receivedTimestamp:
+  column: ingested_utc
+
+quality:
+  accuracyM: gnss_accuracy_m
+
+signals:
+  speed_mps:
+    vssPath: Speed
+    unit: m/s
+
+  gnss_lat:
+    vssPath: CurrentLocation.Latitude
+    unit: degrees
+
+  gnss_lon:
+    vssPath: CurrentLocation.Longitude
+    unit: degrees
+
+  odometer_km:
+    vssPath: TraveledDistance
+    unit: km
+
+  fuel_level_ratio:
+    vssPath: Powertrain.FuelSystem.RelativeLevel
+    unit: fraction
+
+  coolant_c:
+    vssPath: Powertrain.CombustionEngine.EngineCoolant.Temperature
+    unit: Celsius
+
+  engine_on:
+    vssPath: Powertrain.CombustionEngine.IsRunning
+    map:
+      "true": true
+      "false": false
+
+options:
+  nullValues: ["", "NULL", "null", "N/A"]
+  delimiter: ","

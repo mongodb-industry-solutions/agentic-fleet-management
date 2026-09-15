@@ -1,0 +1,25 @@
+# The shipped example profile.
+#
+# A profile holds everything that differs between fleet operators: mapping files,
+# the operating territory, trust seeds and business questions. The core is never
+# edited, so adopting this demo means adding a directory rather than forking.
+
+name: leafy
+displayName: Leafy Mobility
+country: BR
+locale: pt-BR
+timezone: America/Sao_Paulo
+
+description: >
+  A rental and logistics operator running passenger cars, light vans and
+  refrigerated vehicles. Telemetry arrives from aftermarket trackers and, on part
+  of the fleet, from OEM connected car feeds.
+
+# Which capabilities the console should show. A company with only trackers and no
+# cold chain sees a coherent product rather than a wall of empty panels.
+capabilities:
+  dataQuality: true
+  fusion: false        # needs a second source, see step 2 of the adoption path
+  trips: false
+  ontology: false
+  agents: false

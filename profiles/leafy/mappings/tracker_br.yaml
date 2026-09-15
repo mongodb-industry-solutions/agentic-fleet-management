@@ -1,0 +1,77 @@
+# Aftermarket tracker export, Brazilian vendor, Portuguese column names.
+#
+# This file is the whole integration. Naming a VSS path is enough for the
+# pipeline to know the target unit, the datatype, the valid range and the
+# allowed values, because all of that comes from vss.json.
+
+source:
+  name: tracker_br
+  sourceType: CALAMP_TRACKER
+  description: Aftermarket telematics unit, reports over cellular every 30s
+
+identity:
+  column: placa
+  kind: plate
+
+timestamp:
+  column: data_hora
+  tz: America/Sao_Paulo
+
+receivedTimestamp:
+  column: data_recebimento
+  tz: America/Sao_Paulo
+
+quality:
+  hdop: hdop
+  satellites: satelites
+  fix: tipo_fix
+
+signals:
+  velocidade:
+    vssPath: Speed
+    unit: km/h
+
+  latitude:
+    vssPath: CurrentLocation.Latitude
+
+  longitude:
+    vssPath: CurrentLocation.Longitude
+
+  altitude:
+    vssPath: CurrentLocation.Altitude
+    unit: m
+
+  direcao:
+    vssPath: CurrentLocation.Heading
+    unit: degrees
+
+  odometro_km:
+    vssPath: TraveledDistance
+    unit: km
+
+  nivel_combustivel:
+    vssPath: Powertrain.FuelSystem.RelativeLevel
+    unit: percent
+    # 255 is what this firmware sends when the tank sender is disconnected.
+    sentinels: [255]
+
+  tensao_bateria:
+    vssPath: LowVoltageBattery.CurrentVoltage
+    unit: V
+
+  ignicao:
+    vssPath: Powertrain.CombustionEngine.IsRunning
+    map:
+      L: true
+      D: false
+
+  temperatura_motor:
+    vssPath: Powertrain.CombustionEngine.EngineCoolant.Temperature
+    unit: Celsius
+    # This firmware sends -999 when the coolant sensor wire is off. VSS puts no
+    # bounds on this signal, so nothing in the specification would catch it.
+    sentinels: [-999]
+
+options:
+  nullValues: ["", "NULL", "null", "-", "N/A"]
+  delimiter: ","
