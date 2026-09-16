@@ -36,6 +36,7 @@ from langgraph.checkpoint.mongodb import MongoDBSaver
 from langgraph.prebuilt import create_react_agent
 from pymongo.database import Database
 
+from db.mdb import get_mongo_client
 from services.agent_memory import AgentMemory
 from services.agent_tools import RecallTools, ToolResult, dispatch
 
@@ -50,6 +51,9 @@ INVESTIGATOR_MODEL = os.getenv(
 
 AGENT_RUNS = "agent_runs"
 CHECKPOINT_DB = os.getenv("AGENT_CHECKPOINT_DB", "fleet_agent_state")
+# Every run writes a dozen checkpoints. Without an expiry a demo machine
+# accumulates them forever for no benefit.
+CHECKPOINT_TTL_SECONDS = int(os.getenv("AGENT_CHECKPOINT_TTL_SECONDS", str(24 * 3600)))
 
 MAX_TURNS = 12
 INVESTIGATION_WORKERS = 6
@@ -460,50 +464,57 @@ class RecallAgent:
                     state["open"] = None
                 yield AgentEvent(event.pop("type"), event)
 
-        with MongoDBSaver.from_conn_string(
-            os.environ["MONGODB_URI"], CHECKPOINT_DB
-        ) as checkpointer:
-            agent = create_react_agent(
-                _chat(SUPERVISOR_MODEL),
-                recorder.supervisor_tools(),
-                prompt=self._system_prompt(use_memory),
-                checkpointer=checkpointer,
-            )
-            config = {
-                "configurable": {"thread_id": run_id},
-                "recursion_limit": MAX_TURNS * 2,
-            }
-            question = HumanMessage(
-                f"Supplier advisory received for production batch {lot_code}. "
-                f"Work the recall response procedure."
-            )
+        # Reuse the shared pool. from_conn_string would open a second client per
+        # run with PyMongo's defaults: 100 connections rather than our 20, no
+        # timeouts, no appname to identify it in Atlas metrics. Checkpoints
+        # expire, because a demo run's reasoning is worth keeping for a day, not
+        # forever.
+        checkpointer = MongoDBSaver(
+            get_mongo_client(),
+            CHECKPOINT_DB,
+            ttl=CHECKPOINT_TTL_SECONDS,
+        )
+        agent = create_react_agent(
+            _chat(SUPERVISOR_MODEL),
+            recorder.supervisor_tools(),
+            prompt=self._system_prompt(use_memory),
+            checkpointer=checkpointer,
+        )
+        config = {
+            "configurable": {"thread_id": run_id},
+            "recursion_limit": MAX_TURNS * 2,
+        }
+        question = HumanMessage(
+            f"Supplier advisory received for production batch {lot_code}. "
+            f"Work the recall response procedure."
+        )
 
-            for chunk, _meta in agent.stream(
-                {"messages": [question]}, config, stream_mode="messages"
-            ):
-                yield from flush()
-
-                usage = getattr(chunk, "usage_metadata", None)
-                if usage:
-                    spend.add(SUPERVISOR_MODEL, usage)
-
-                if not isinstance(chunk, AIMessageChunk):
-                    continue
-                piece = _text_of(chunk)
-                if not piece:
-                    continue
-                if state["open"] is None:
-                    state["block"] += 1
-                    state["open"] = f"{run_id}-{state['block']}"
-                    yield AgentEvent("text_start", {"id": state["open"]})
-                narrative.append(piece)
-                yield AgentEvent(
-                    "text_delta", {"id": state["open"], "content": piece}
-                )
-
+        for chunk, _meta in agent.stream(
+            {"messages": [question]}, config, stream_mode="messages"
+        ):
             yield from flush()
-            if state["open"]:
-                yield AgentEvent("text_end", {"id": state["open"]})
+
+            usage = getattr(chunk, "usage_metadata", None)
+            if usage:
+                spend.add(SUPERVISOR_MODEL, usage)
+
+            if not isinstance(chunk, AIMessageChunk):
+                continue
+            piece = _text_of(chunk)
+            if not piece:
+                continue
+            if state["open"] is None:
+                state["block"] += 1
+                state["open"] = f"{run_id}-{state['block']}"
+                yield AgentEvent("text_start", {"id": state["open"]})
+            narrative.append(piece)
+            yield AgentEvent(
+                "text_delta", {"id": state["open"], "content": piece}
+            )
+
+        yield from flush()
+        if state["open"]:
+            yield AgentEvent("text_end", {"id": state["open"]})
 
         collected = recorder.collected
         if "propose_actions" in collected:

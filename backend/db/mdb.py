@@ -29,19 +29,26 @@ def get_mongo_client() -> MongoClient:
             logger.warning("No MONGODB_URI provided")
             return None
         
-        # Configure connection pool for shared cluster usage.
-        # Key settings to prevent connection count from growing:
-        #   minPoolSize=8  → keep sockets open; a fresh TLS handshake to Atlas
-        #                    costs several hundred milliseconds, and a page that
-        #                    fires five requests at once pays it five times
-        #   maxPoolSize=20 → ceiling per process
-        #   maxIdleTimeMS=10000 → close sockets unused for 10 s (vs Atlas's ~10 min default)
+        # Connection pool, sized for a shared cluster.
+        #
+        # Both pool sizes are PER NODE, not per client. Against a three node
+        # replica set this process therefore holds 3 x minPoolSize sockets idle
+        # and can reach 3 x maxPoolSize under load. Every script that connects
+        # is another process with its own pool, so running a load while the API
+        # is up doubles it.
+        #
+        #   minPoolSize=4  → 12 sockets kept warm. A fresh TLS handshake to
+        #                    Atlas costs several hundred milliseconds, and the
+        #                    overview fires five requests at once.
+        #   maxPoolSize=20 → 60 ceiling, well inside an M10's 1,500 limit.
+        #   maxIdleTimeMS  → release sockets unused for 10 s, rather than
+        #                    Atlas's ~10 minute default.
         _client = MongoClient(
             uri,
             appname=appname,
             # Connection pool settings
-            maxPoolSize=20,   # Ceiling — keeps Atlas connection count sane
-            minPoolSize=8,    # Pre-warmed, so concurrent requests do not handshake
+            maxPoolSize=20,   # Per node; 60 across a three node replica set
+            minPoolSize=4,    # Per node; 12 warm, so bursts do not handshake
             maxIdleTimeMS=10000,  # Release idle sockets after 10 s
             # Timeouts to prevent hanging
             serverSelectionTimeoutMS=5000,  # 5s to find a server
@@ -57,7 +64,7 @@ def get_mongo_client() -> MongoClient:
             compressors="zlib",
             zlibCompressionLevel=6,
         )
-        logger.info(f"MongoDB client initialized (appname={appname}, maxPoolSize=20, minPoolSize=8)")
+        logger.info(f"MongoDB client initialized (appname={appname}, maxPoolSize=20/node, minPoolSize=4/node)")
     
     return _client
 
