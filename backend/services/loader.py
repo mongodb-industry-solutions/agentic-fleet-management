@@ -28,6 +28,8 @@ from db.schema import (
     FINDINGS,
     INGEST_RUNS,
     PROVENANCE,
+    QUALITY_REPORTS,
+    QUALITY_SUMMARY_ID,
     SIGNAL_HISTORY,
     SIGNAL_REGISTRY,
     TELEMETRY_RAW,
@@ -141,7 +143,7 @@ def _measurement(asset_id: str, result: ReadingResult, source_type: str) -> dict
     }
 
 
-def _raw_document(asset_id: str, obs, source_type: str) -> dict:
+def _raw_document(asset_id: str, obs, source_type: str, ingested_at: datetime) -> dict:
     doc = {
         "assetRef": asset_id,
         "sourceType": source_type,
@@ -150,6 +152,9 @@ def _raw_document(asset_id: str, obs, source_type: str) -> dict:
         "unit": obs.unit,
         "observedAt": obs.observed_at,
         "receivedAt": obs.received_at,
+        # The TTL runs from here rather than from observedAt, so loading a
+        # historical extract does not expire it on arrival.
+        "ingestedAt": ingested_at,
         "raw": {"column": obs.raw_column, "value": str(obs.raw_value)},
     }
     if obs.rejected:
@@ -206,6 +211,9 @@ class ExtractLoader:
         self.accumulator = accumulator
         self.identity = identity
         self.keep_accepted_raw = keep_accepted_raw
+        # One timestamp for the whole extract. Every raw document in this load
+        # expires together, and it is read once rather than per observation.
+        self.ingested_at = datetime.now(timezone.utc)
 
         self.rows = 0
         self.rows_rejected = 0
@@ -247,11 +255,15 @@ class ExtractLoader:
                 self.observations_rejected += 1
                 self.accumulator.counts[asset_id]["rejected"] += 1
                 self.accumulator.reasons[asset_id][obs.rejected.reason.value] += 1
-                raw_docs.append(_raw_document(asset_id, obs, self.source_type))
+                raw_docs.append(
+                    _raw_document(asset_id, obs, self.source_type, self.ingested_at)
+                )
                 continue
 
             if self.keep_accepted_raw:
-                raw_docs.append(_raw_document(asset_id, obs, self.source_type))
+                raw_docs.append(
+                    _raw_document(asset_id, obs, self.source_type, self.ingested_at)
+                )
 
             self.accumulator.offer(asset_id, obs, quality)
 
@@ -462,6 +474,74 @@ def fuse_and_write(db: Database, accumulator: FleetAccumulator) -> dict:
     }
 
 
+def write_quality_reports(db: Database, profile: ProfileService) -> list[str]:
+    """Persist each source's quality report, and the headline across all of them.
+
+    The report is a pure function of the extract, and a load is the one moment
+    the extract is guaranteed to be in hand. Writing it here is what lets the API
+    answer the Data quality tab with a findOne instead of re-reading 800,000
+    rows, and it is cheap: ProfileService has usually just cached the report, so
+    this is a lookup rather than a second pass.
+
+    The combined asset count is computed here rather than in the route because
+    the reports still hold the identifier sets, so the vehicles both feeds saw
+    are counted once instead of twice.
+    """
+    reports = profile.run_all()
+    if not reports:
+        logger.warning("No extracts found, so no quality reports were written")
+        return []
+
+    generated_at = datetime.now(timezone.utc)
+    written: list[str] = []
+
+    for name, report in reports.items():
+        document = report.to_dict()
+        document["_id"] = name
+        document["generatedAt"] = generated_at
+        db[QUALITY_REPORTS].replace_one({"_id": name}, document, upsert=True)
+        written.append(name)
+
+    observations = sum(r.observations_read for r in reports.values())
+    rejected = sum(r.observations_rejected for r in reports.values())
+    assets: set[str] = set()
+    for report in reports.values():
+        assets |= report.assets_seen
+
+    summary = {
+        "_id": QUALITY_SUMMARY_ID,
+        "profile": profile.name,
+        "generatedAt": generated_at,
+        "sources": [
+            {
+                "name": name,
+                "sourceType": report.source_type,
+                "rowsRead": report.rows_read,
+                "observationsRead": report.observations_read,
+                "observationsRejected": report.observations_rejected,
+                "rejectRate": round(report.reject_rate, 5),
+                "assetsSeen": len(report.assets_seen),
+                "topReasons": [
+                    {"reason": reason, "count": count}
+                    for reason, count in report.observation_reasons.most_common(3)
+                ],
+            }
+            for name, report in reports.items()
+        ],
+        "totals": {
+            "rowsRead": sum(r.rows_read for r in reports.values()),
+            "observationsRead": observations,
+            "observationsRejected": rejected,
+            "rejectRate": round(rejected / observations, 5) if observations else 0.0,
+            "assetsSeen": len(assets),
+        },
+    }
+    db[QUALITY_REPORTS].replace_one({"_id": QUALITY_SUMMARY_ID}, summary, upsert=True)
+
+    logger.info("Quality reports written for %s", ", ".join(written))
+    return written
+
+
 def load_profile(
     db: Database, profile: ProfileService, limit: int | None = None
 ) -> dict:
@@ -488,6 +568,10 @@ def load_profile(
     fusion = fuse_and_write(db, accumulator)
     fusion["seconds"] = round(time.perf_counter() - started, 2)
 
+    # Only for a full load. A limited run has read part of an extract, and a
+    # partial report is worse than the one already stored.
+    quality_reports = write_quality_reports(db, profile) if limit is None else []
+
     return {
         "collections": actions,
         "signalsLoaded": signals,
@@ -496,4 +580,5 @@ def load_profile(
         "fusionProfiles": seeded,
         "runs": runs,
         "fusion": fusion,
+        "qualityReports": quality_reports,
     }
