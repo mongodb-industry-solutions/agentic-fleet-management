@@ -97,7 +97,14 @@ class Labeller:
 
     @property
     def available(self) -> bool:
-        return bool(self.profile or os.getenv("AWS_ACCESS_KEY_ID"))
+        return bool(
+            self.profile
+            or os.getenv("AWS_ACCESS_KEY_ID")
+            or (
+                os.getenv("AWS_ROLE_ARN")
+                and os.getenv("AWS_WEB_IDENTITY_TOKEN_FILE")
+            )
+        )
 
     @property
     def client(self):
