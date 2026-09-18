@@ -16,7 +16,7 @@ env:
 
 ## Single Pod Containers
 
-  envSecrets:
+envSecrets:
   MONGODB_URI: fleet-management-staging
   DATABASE_NAME: fleet-management-staging
   APP_NAME: fleet-management-staging
