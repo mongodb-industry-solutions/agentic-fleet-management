@@ -58,7 +58,7 @@ steps:
       add_repos: [mongodb=https://10gen.github.io/helm-charts]
       namespace: industrysolutions
       release: next-gen-fleet-management
-      values_files: ["environment/staging.yaml"]
+      values_files: ["environments/staging.yaml"]
       values:
         - "sidecarContainers[0].name=backend"
         - "sidecarContainers[0].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/next-gen-fleet-management-backend:git-${DRONE_COMMIT_SHA:0:7}"
@@ -148,7 +148,7 @@ steps:
       add_repos: [mongodb=https://10gen.github.io/helm-charts]
       namespace: industrysolutions
       release: next-gen-fleet-management-prod
-      values_files: ["environment/production.yaml"]
+      values_files: ["environments/production.yaml"]
       values:
         - "sidecarContainers[0].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/next-gen-fleet-management-backend-prod:git-${DRONE_COMMIT_SHA:0:7}"
         - "image.tag=git-${DRONE_COMMIT_SHA:0:7}"

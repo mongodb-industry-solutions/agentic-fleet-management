@@ -18,6 +18,11 @@ envSecrets:
   # MongoDB Configuration
   MONGODB_URI: fleet-management-prod
   DATABASE_NAME: fleet-management-prod
+  APP_NAME: fleet-management-prod
+  PROFILE: fleet-management-prod
+  AWS_REGION: fleet-management-prod
+  AWS_PROFILE: fleet-management-prod
+  ORIGINS: fleet-management-prod
   VOYAGE_API_KEY: fleet-management-prod
   # Bedrock Inference Profiles (see cloud-cost-tracking.md)
   CHATCOMPLETIONS_MODEL_ID: fleet-management-prod
