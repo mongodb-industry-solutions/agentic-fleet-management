@@ -53,22 +53,30 @@ async def lifespan(app: FastAPI):
     registry = get_registry()
     logger.info("VSS %s loaded: %d signals", registry.version, len(registry))
 
+    has_database = bool(get_mongo_client())
+
     try:
         profile = get_profile_service()
         logger.info(
             "Profile %r loaded with sources: %s",
             profile.name, sorted(profile.mappings),
         )
-        # Reading 800,000 rows takes half a minute, and whoever opens the
-        # overview first should not be the one paying for it. Warm it on a
-        # thread so the API answers while the reports build.
-        threading.Thread(
-            target=_warm_quality_reports, args=(profile,), daemon=True
-        ).start()
+        # With a database, the load has already written every report, so the
+        # API reads them rather than the extracts and there is nothing to warm.
+        #
+        # Without one, reading 800,000 rows takes half a minute and whoever
+        # opens the overview first should not be the one paying for it. Warm it
+        # on a thread so the API answers while the reports build.
+        if has_database:
+            logger.info("Quality reports will be read from MongoDB")
+        else:
+            threading.Thread(
+                target=_warm_quality_reports, args=(profile,), daemon=True
+            ).start()
     except FileNotFoundError as exc:
         logger.warning("No profile loaded: %s", exc)
 
-    if get_mongo_client():
+    if has_database:
         logger.info("MongoDB connection pool initialised")
     else:
         logger.info("No MONGODB_URI set, running without a database")

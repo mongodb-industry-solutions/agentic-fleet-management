@@ -1,0 +1,32 @@
+# Kanopy security and ownership (requires web-app chart v4.30.0+)
+security:
+  dataClassification: "Internal"
+  dataDesignation: ["MI"]
+
+ownership:
+  driEmail: owner.email@mongodb.com
+
+env:
+  NODE_ENV: staging
+  # AWS region for IRSA (no credentials needed)
+  AWS_REGION: us-east-1
+  # Backend API URL for frontend to connect to backend health check - get <service-name> using kubectl get services
+  BACKEND_URL: http://localhost:8000 # or http://localhost:8000 if multicontainer pod is setup and backend is running on 8000
+  COLLECTION_NAME: next-gen-fleet-management
+
+## Single Pod Containers
+envSecrets:
+  # MongoDB Configuration
+  MONGODB_URI: fleet-management-staging
+  DATABASE_NAME: fleet-management-staging
+  VOYAGE_API_KEY: fleet-management-staging
+  # Bedrock Inference Profiles (see cloud-cost-tracking.md)
+  CHATCOMPLETIONS_MODEL_ID: fleet-management-staging
+  EMBEDDINGS_MODEL_ID: fleet-management-staging
+
+# Add IRSA configuration here, role here gives access to bedrock, s3, aws secrets manager
+serviceAccount:
+  enabled: true
+  irsa:
+    accountId: "275662791714"
+    roleName: "kanopy-staging-cicd-irsa"

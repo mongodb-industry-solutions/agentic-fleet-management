@@ -17,6 +17,8 @@ dependencies = [
     "langgraph>=1.2.11",
     "langgraph-checkpoint-mongodb>=0.5.0",
     "langchain-aws>=1.7.6",
+    "datasets>=3.0.0",
+    "pillow>=11.0.0",
 ]
 
 [build-system]

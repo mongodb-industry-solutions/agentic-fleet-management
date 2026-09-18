@@ -13,7 +13,7 @@ shows the collection, the query and the capability behind whatever is on screen.
 
 ```bash
 make setup                  # uv sync + npm install
-cp backend/env.example backend/.env    # add MONGODB_URI
+cp backend/env.example backend/.env    # add MONGODB_URI, VOYAGE_API_KEYS and AWS_PROFILE or your AWS Credentials
 make sample                 # 5,000 vehicles and their tracker extract
 make load                   # map, validate, fuse and write to Atlas
 make graph                  # build the ontology and the parts graph
