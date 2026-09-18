@@ -1,17 +1,17 @@
 FROM python:3.13-slim
 
-WORKDIR /
+WORKDIR /app/backend
 
 RUN pip install uv
 
-COPY /backend/pyproject.toml ./
+COPY backend/pyproject.toml ./
 RUN uv sync --no-dev
 
-COPY ./backend/ .
-# The VSS specification lives at the repo root and is read at startup.
-COPY vss.json /vss.json
-COPY profiles/ /profiles/
-ENV VSS_JSON_PATH=/vss.json
+COPY backend/ .
+COPY vss.json /app/vss.json
+COPY profiles/ /app/profiles/
+
+ENV VSS_JSON_PATH=/app/vss.json
 
 EXPOSE 8000
 
