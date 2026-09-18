@@ -19,6 +19,7 @@ from db.schema import collection_stats
 from services.fleet_service import DISPLAY_SIGNALS, get_fleet_service, summarise
 from services.fleet_rules import activity_of
 from vss.loader import get_registry
+from urllib.parse import unquote
 
 router = APIRouter(prefix="/api/fleet", tags=["fleet"])
 
@@ -166,6 +167,7 @@ def storage():
 @router.get("/{plate}")
 def get_vehicle(plate: str):
     """Everything about one vehicle: registry, live state, trips and findings."""
+    plate = unquote(plate).strip().upper()
     service = _require_db()
 
     started = time.perf_counter()

@@ -33,10 +33,20 @@ PROVENANCE = "provenance"
 FINDINGS = "findings"
 INGEST_RUNS = "ingest_runs"
 
+# One quality report per vendor source, written at load time so the API never
+# has to read an extract to answer for the Data quality tab. The headline across
+# every source is one more document in the same collection, under a reserved id.
+QUALITY_REPORTS = "quality_reports"
+QUALITY_SUMMARY_ID = "__summary__"
+
 # Raw readings are a landing zone, not a system of record. They are kept long
 # enough to investigate a bad vendor feed and no longer, because at 199 bytes per
 # observation against 45 for the compressed series this is the most expensive
 # collection per day of retention.
+#
+# The clock runs from ingestedAt, not observedAt. Hanging it off the observation
+# time expires a historical extract the moment it lands, which is exactly the
+# extract an operator is most likely to load first.
 TELEMETRY_RAW_TTL_DAYS = 7
 
 
@@ -76,13 +86,24 @@ def ensure_collections(db: Database) -> dict[str, str]:
     db[TELEMETRY_RAW].create_index([("assetRef", ASCENDING), ("observedAt", DESCENDING)])
     db[TELEMETRY_RAW].create_index([("rejected.reason", ASCENDING)])
     db[TELEMETRY_RAW].create_index([("sourceType", ASCENDING)])
+
+    # A database written before the TTL moved still carries the old index, and
+    # leaving it in place would expire the landing zone by observation time
+    # whatever the new one says.
+    try:
+        if "observedAt_ttl" in db[TELEMETRY_RAW].index_information():
+            db[TELEMETRY_RAW].drop_index("observedAt_ttl")
+            logger.info("Dropped the legacy observedAt TTL index on %s", TELEMETRY_RAW)
+    except OperationFailure as exc:
+        logger.warning("Could not drop the legacy TTL index: %s", exc)
+
     try:
         db[TELEMETRY_RAW].create_index(
-            [("observedAt", ASCENDING)],
+            [("ingestedAt", ASCENDING)],
             expireAfterSeconds=TELEMETRY_RAW_TTL_DAYS * 24 * 3600,
-            name="observedAt_ttl",
+            name="ingestedAt_ttl",
         )
-        actions[TELEMETRY_RAW] = f"indexed, TTL {TELEMETRY_RAW_TTL_DAYS}d"
+        actions[TELEMETRY_RAW] = f"indexed, TTL {TELEMETRY_RAW_TTL_DAYS}d from ingest"
     except OperationFailure as exc:
         logger.warning("Could not create TTL index on %s: %s", TELEMETRY_RAW, exc)
         actions[TELEMETRY_RAW] = "indexed, TTL unavailable"
