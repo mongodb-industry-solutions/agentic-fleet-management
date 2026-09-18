@@ -15,19 +15,15 @@ env:
   COLLECTION_NAME: next-gen-fleet-management
 
 ## Single Pod Containers
-envSecrets:
-  # MongoDB Configuration
+
+  envSecrets:
   MONGODB_URI: fleet-management-staging
   DATABASE_NAME: fleet-management-staging
   APP_NAME: fleet-management-staging
   VOYAGE_API_KEY: fleet-management-staging
   PROFILE: fleet-management-staging
-  AWS_REGION: fleet-management-staging
   AWS_PROFILE: fleet-management-staging
   ORIGINS: fleet-management-staging
-  # Bedrock Inference Profiles (see cloud-cost-tracking.md)
-  CHATCOMPLETIONS_MODEL_ID: fleet-management-staging
-  EMBEDDINGS_MODEL_ID: fleet-management-staging
 
 # Add IRSA configuration here, role here gives access to bedrock, s3, aws secrets manager
 serviceAccount:
