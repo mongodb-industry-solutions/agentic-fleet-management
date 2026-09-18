@@ -146,7 +146,14 @@ class Spend:
 
 
 def bedrock_available() -> bool:
-    return bool(os.getenv("AWS_PROFILE") or os.getenv("AWS_ACCESS_KEY_ID"))
+    return bool(
+        os.getenv("AWS_PROFILE")
+        or os.getenv("AWS_ACCESS_KEY_ID")
+        or (
+            os.getenv("AWS_ROLE_ARN")
+            and os.getenv("AWS_WEB_IDENTITY_TOKEN_FILE")
+        )
+    )
 
 
 def _chat(model_id: str, max_tokens: int = 2000):
