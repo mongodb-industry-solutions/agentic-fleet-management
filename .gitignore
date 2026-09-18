@@ -16,8 +16,9 @@ out/
 *.log
 
 # Generated sample data and customer extracts. Never commit fleet data.
-backend/data/
-profiles/*/data/
+backend/data/*
+!backend/data/sample/
+!backend/data/sample/**
 
 # Local tooling
 shot.mjs

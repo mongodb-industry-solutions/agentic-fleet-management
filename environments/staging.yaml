@@ -12,18 +12,39 @@ env:
   AWS_REGION: us-east-1
   # Backend API URL for frontend to connect to backend health check - get <service-name> using kubectl get services
   BACKEND_URL: http://localhost:8000 # or http://localhost:8000 if multicontainer pod is setup and backend is running on 8000
-  COLLECTION_NAME: next-gen-fleet-management
+  COLLECTION_NAME: fleet-management
 
 ## Single Pod Containers
 
-envSecrets:
-  MONGODB_URI: fleet-management-staging
-  DATABASE_NAME: fleet-management-staging
-  APP_NAME: fleet-management-staging
-  VOYAGE_API_KEY: fleet-management-staging
-  PROFILE: fleet-management-staging
-  AWS_PROFILE: fleet-management-staging
-  ORIGINS: fleet-management-staging
+sidecarContainers:
+  - name: backend
+    image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/next-gen-fleet-management-backend:latest
+    ports:
+      - containerPort: 8000
+    env:
+      - name: DATABASE_NAME
+        value: fleet_management
+      - name: PROFILE
+        value: leafy
+      - name: AWS_REGION
+        value: us-east-1
+      - name: MONGODB_URI
+        valueFrom:
+          secretKeyRef:
+            name: fleet-management-staging
+            key: MONGODB_URI
+      - name: VOYAGE_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: fleet-management-staging
+            key: VOYAGE_API_KEY
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
 
 # Add IRSA configuration here, role here gives access to bedrock, s3, aws secrets manager
 serviceAccount:
