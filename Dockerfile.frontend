@@ -5,6 +5,7 @@ RUN npm install
 COPY frontend/ .
 # Empty string forces relative /api URLs in browser
 ENV NEXT_PUBLIC_API_URL=""
+ENV BACKEND_URL=http://localhost:8000
 RUN npm run build
 ENV PORT=8080
 EXPOSE 8080
