@@ -15,13 +15,13 @@ env:
 
 ## Single Pod Containers
 envSecrets:
-  MONGODB_URI: fleet-management-staging
-  DATABASE_NAME: fleet-management-staging
-  APP_NAME: fleet-management-staging
-  VOYAGE_API_KEY: fleet-management-staging
-  PROFILE: fleet-management-staging
-  AWS_PROFILE: fleet-management-staging
-  ORIGINS: fleet-management-staging
+  MONGODB_URI: fleet-management-prod
+  DATABASE_NAME: fleet-management-prod
+  APP_NAME: fleet-management-prod
+  VOYAGE_API_KEY: fleet-management-prod
+  PROFILE: fleet-management-prod
+  AWS_PROFILE: fleet-management-prod
+  ORIGINS: fleet-management-prod
 
 ## ----------------------------- Cloud Specific Configurations (For AWS only line 42 to 46 needed)-----------------------------
 
