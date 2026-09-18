@@ -12,7 +12,7 @@ env:
   AWS_REGION: us-east-1
   # Backend API URL for frontend to connect to backend health check - get <service-name> using kubectl get services
   BACKEND_URL: http://localhost:8000 # or http://localhost:8000 if multicontainer pod is setup and backend is running on 8000
-  COLLECTION_NAME: fleet-management
+  COLLECTION_NAME: fleet_management
 
 ## Single Pod Containers
 

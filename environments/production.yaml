@@ -12,16 +12,39 @@ env:
   AWS_REGION: us-east-1
   # Backend API URL for frontend to connect to backend health check
   BACKEND_URL: http://localhost:8000 # or http://localhost:8000 if multicontainer pod is setup and backend is running on 8000
+  COLLECTION_NAME: fleet_management
 
 ## Single Pod Containers
-envSecrets:
-  MONGODB_URI: fleet-management-prod
-  DATABASE_NAME: fleet-management-prod
-  APP_NAME: fleet-management-prod
-  VOYAGE_API_KEY: fleet-management-prod
-  PROFILE: fleet-management-prod
-  AWS_PROFILE: fleet-management-prod
-  ORIGINS: fleet-management-prod
+sidecarContainers:
+  - name: backend
+    image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/next-gen-fleet-management-backend:latest
+    ports:
+      - containerPort: 8000
+    env:
+      - name: DATABASE_NAME
+        value: fleet_management
+      - name: PROFILE
+        value: leafy
+      - name: AWS_REGION
+        value: us-east-1
+      - name: MONGODB_URI
+        valueFrom:
+          secretKeyRef:
+            name: fleet-management-prod
+            key: MONGODB_URI
+      - name: VOYAGE_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: fleet-management-prod
+            key: VOYAGE_API_KEY
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
 
 ## ----------------------------- Cloud Specific Configurations (For AWS only line 42 to 46 needed)-----------------------------
 
