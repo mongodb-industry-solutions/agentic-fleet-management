@@ -14,7 +14,7 @@ env:
   BACKEND_URL: http://localhost:8000 # or http://localhost:8000 if multicontainer pod is setup and backend is running on 8000
 
 ## Single Pod Containers
-nvSecrets:
+envSecrets:
   MONGODB_URI: fleet-management-staging
   DATABASE_NAME: fleet-management-staging
   APP_NAME: fleet-management-staging
