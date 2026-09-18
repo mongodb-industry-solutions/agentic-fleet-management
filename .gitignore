@@ -30,3 +30,4 @@ probe*.mjs
 .claude/
 
 knowledge_phase_kanopy/
+dump/
